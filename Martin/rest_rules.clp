@@ -37,8 +37,21 @@
 
 (defrule match-preference
 	?cust <- (cust_preference (cust_name ?custName) (isSmoker ?custSmoke) (minBudget ?custMinBudget) (maxBudget ?custMaxBudget) (dresscode ?custClothe $?custClothes) (hasWifi ?custWifi) (latitude ?custLat) (longitude ?custLong))
-	(restaurant (rest_name ?restName) (isSmoker ?custSmoke) (minBudget ?restMinBudget) (maxBudget ?restMaxBudget) (dresscode ?restClothe $?restClothes) (hasWifi ?custWifi) (latitude ?restLat) (longitude ?restLong))
+	(restaurant (rest_name ?restName) (isSmoker ?restSmoke) (minBudget ?restMinBudget) (maxBudget ?restMaxBudget) (dresscode ?restClothe $?restClothes) (hasWifi ?restWifi) (latitude ?restLat) (longitude ?restLong))
 =>
+	(bind ?counter 0)
+	(if (eq ?restSmoke ?custSmoke) then
+		(bind ?counter (+ ?counter 1)))
+;	(if (eq ?dresscode ) then
+;		(bind ?counter (+ ?counter 1)))
+	(if (eq ?restWifi ?custWifi) then
+		(bind ?counter (+ ?counter 1)))
+	(assert (counter ?counter))
+	(if (> ?counter 1) then
+		(bind ?recommendation "Very Recommended")
+	else
+		(bind ?recommendation "Recommended"))
+	(assert (suggestion (rest_name ?restName) (recommendation-type ?recommendation)))
 	(retract ?cust)
 	(printout t "Nama restoran :  " ?restName crlf)
 )
