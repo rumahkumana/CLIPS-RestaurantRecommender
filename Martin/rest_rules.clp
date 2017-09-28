@@ -1,5 +1,7 @@
 ;; Rules
 
+(deffacts startup (suggestion-iter 0)) ;; Iterator untuk menampilkan suggestion
+
 (deffacts restaurantList
 	(restaurant (rest_name A) (isSmoker yes) (minBudget 1000) (maxBudget 2000) (dresscode casual) (hasWifi yes) (latitude -6.8922186) (longitude 107.5886173))
 	(restaurant (rest_name B) (isSmoker no) (minBudget 1200) (maxBudget 2500) (dresscode informal) (hasWifi yes) (latitude -6.224085) (longitude 106.7859815))
@@ -36,23 +38,49 @@
 )
 
 (defrule match-preference
-	?cust <- (cust_preference (cust_name ?custName) (isSmoker ?custSmoke) (minBudget ?custMinBudget) (maxBudget ?custMaxBudget) (dresscode ?custClothe $?custClothes) (hasWifi ?custWifi) (latitude ?custLat) (longitude ?custLong))
+	(cust_preference (cust_name ?custName) (isSmoker ?custSmoke) (minBudget ?custMinBudget) (maxBudget ?custMaxBudget) (dresscode ?custClothe $?custClothes) (hasWifi ?custWifi) (latitude ?custLat) (longitude ?custLong))
 	(restaurant (rest_name ?restName) (isSmoker ?restSmoke) (minBudget ?restMinBudget) (maxBudget ?restMaxBudget) (dresscode ?restClothe $?restClothes) (hasWifi ?restWifi) (latitude ?restLat) (longitude ?restLong))
 =>
+	;; Scoring
+
 	(bind ?counter 0)
 	(if (eq ?restSmoke ?custSmoke) then
+		(printout t ?restName " Match isSmoke" crlf)
 		(bind ?counter (+ ?counter 1)))
-;	(if (eq ?dresscode ) then
-;		(bind ?counter (+ ?counter 1)))
+	(if (> ?restMinBudget ?custMinBudget) then
+		(printout t ?restName " Match minBudget" crlf)
+		(bind ?counter (+ ?counter 1)))
+	(if (< ?restMaxBudget ?custMaxBudget) then
+		(printout t ?restName " Match maxBudget" crlf)
+		(bind ?counter (+ ?counter 1)))
+	(if (eq ?restClothe ?custClothe) then
+		(printout t ?restName " Match dresscode" crlf)
+		(bind ?counter (+ ?counter 1)))
 	(if (eq ?restWifi ?custWifi) then
+		(printout t ?restName " Match hasWifi" crlf)
 		(bind ?counter (+ ?counter 1)))
-	(assert (counter ?counter))
-	(if (> ?counter 1) then
-		(bind ?recommendation "Very Recommended")
-	else
-		(bind ?recommendation "Recommended"))
-	(assert (suggestion (rest_name ?restName) (recommendation-type ?recommendation)))
-	(retract ?cust)
-	(printout t "Nama restoran :  " ?restName crlf)
+	(if (= ?counter 5) then
+		(bind ?recommendation VeryRecommended))
+	(if (< ?counter 5) then 
+		(if (> ?counter 2) then
+			(bind ?recommendation Recommended)
+		else
+			(bind ?recommendation NotRecommended)))
+
+	;; Euclidean distance
+	
+	(bind ?dist (sqrt (+ (** (abs (- ?restLat ?custLat)) 2) (** (abs (- ?restLong ?custLong)) 2))))
+
+	;; Menampilkan ke layar
+
+	(assert (suggestion (rest_name ?restName) (recommendation-type ?recommendation) (distance ?dist)))
+)
+
+(defrule show-suggestion
+	?iterator <- (suggestion-iter ?iterValue)
+	(suggestion (rest_name ?restName) (recommendation-type ?recommendation) (distance ?dist))
+	(test (or (eq ?recommendation VeryRecommended) (eq ?recommendation Recommended)))
+=>
+	(printout t ?recommendation" : " ?restName "(" ?dist ")" crlf)
 )
 
