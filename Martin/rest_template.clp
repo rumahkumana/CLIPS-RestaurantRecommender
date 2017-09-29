@@ -1,5 +1,12 @@
 ; Templates
 
+; Template untuk sorting dan ranking restaurant suggestions
+
+(deftemplate iter  (slot suggestion-iter))
+(deftemplate farthest 
+    (slot rest_name)
+    (slot distance))
+
 ; Template untuk merepresentasikan restoran.
 (deftemplate restaurant
   (slot rest_name) 
@@ -24,9 +31,18 @@
   (slot longitude)
 )
 
+; Template untuk merepresentasikan skor setiap restaurant berdasarkan preference user
+; Setiap restaurant dinilai skornya sebelum ditampilkan sebagai suggestion
+(deftemplate score
+  (slot rest_name)
+  (slot score)
+)
+
 ; Template untuk merepresentasikan restaurant suggestion.
 (deftemplate suggestion
   (slot rest_name)
-  (slot recommendation-type) ; Very recommended / recommended / not recommended)
+  (slot recommendation-type) ; Very recommended / recommended / not recommended
   (slot distance)
+  (slot score)
 )
+

@@ -1,7 +1,5 @@
 ;; Rules
 
-(deffacts startup (suggestion-iter 0)) ;; Iterator untuk menampilkan suggestion
-
 (deffacts restaurantList
 	(restaurant (rest_name A) (isSmoker yes) (minBudget 1000) (maxBudget 2000) (dresscode casual) (hasWifi yes) (latitude -6.8922186) (longitude 107.5886173))
 	(restaurant (rest_name B) (isSmoker no) (minBudget 1200) (maxBudget 2500) (dresscode informal) (hasWifi yes) (latitude -6.224085) (longitude 106.7859815))
@@ -33,8 +31,11 @@
 		(bind ?latcoord (read))
 		(printout t "What are you long. coordinate ? ")
 		(bind ?longcoord (read))
-
+		(printout t "How many suggestions do you want ? ")
+		(bind ?suggNum (read))
 		(assert (cust_preference (cust_name ?name) (isSmoker ?smoke) (minBudget ?minbudget) (maxBudget ?maxbudget) (dresscode ?clothes) (hasWifi ?wifi) (latitude ?latcoord) (longitude ?longcoord)))
+		(assert (numberOfSugg ?suggNum))
+		(printout t crlf)
 )
 
 (defrule match-preference
@@ -74,13 +75,34 @@
 	;; Menampilkan ke layar
 
 	(assert (suggestion (rest_name ?restName) (recommendation-type ?recommendation) (distance ?dist)))
+	(assert (suggestion-iter 0))
+	(assert (print-sorted))
 )
 
-(defrule show-suggestion
-	?iterator <- (suggestion-iter ?iterValue)
-	(suggestion (rest_name ?restName) (recommendation-type ?recommendation) (distance ?dist))
-	(test (or (eq ?recommendation VeryRecommended) (eq ?recommendation Recommended)))
+(defrule assert-unprinted 
+	(print-sorted)
+	(suggestion (rest_name ?restName))
 =>
-	(printout t ?recommendation" : " ?restName "(" ?dist ")" crlf)
-)
+	(assert (unprinted ?restName)))
+
+(defrule retract-print-sorted 
+	(declare (salience -10))
+	?f <- (print-sorted)
+=>
+	(retract ?f))
+
+(defrule group-and-print-greatest
+	(not (print-sorted))
+	?u <- (unprinted ?restName)
+	?iter <- (suggestion-iter ?iterValue)
+	(numberOfSugg ?suggNum)
+	(suggestion (rest_name ?restName) (recommendation-type ?recommendation) (distance ?dist))
+	(forall (and (unprinted ?name) (suggestion (rest_name ?name) (recommendation-type ?recommendation) (distance ?d)))
+          (test (>= ?d ?dist)))
+=>
+	(retract ?iter)
+	(if (< ?iterValue ?suggNum) then
+		(assert (suggestion-iter (+ ?iterValue 1)))
+		(retract ?u)
+		(printout t ?recommendation " : " ?restName "(" ?dist ")" crlf)))
 
