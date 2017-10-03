@@ -30,6 +30,7 @@
   (slot rest_name)
   (slot recommendation-type) ; Very recommended / recommended / not recommended
   (slot distance)
+  (slot minBudget)
 )
 
 ; Facts awal untuk restoran
