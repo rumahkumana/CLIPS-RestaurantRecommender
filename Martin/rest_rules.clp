@@ -72,27 +72,28 @@
 =>
 	(assert (unprinted ?restName)))
 
-(deffunction rating-sort (?f1 ?f2)
+(deffunction distance-sort (?f1 ?f2)
    (> (fact-slot-value ?f1 distance) (fact-slot-value ?f2 distance)))
 
 
 (defrule print-very-recommended
+
 =>
    (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 1)))
-   (bind ?facts (sort rating-sort ?facts))
+   (bind ?facts (sort distance-sort ?facts))
    (progn$ (?f ?facts)
       (printout t "Very recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf)))
 
 (defrule print-recommended
 =>
    (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 2)))
-   (bind ?facts (sort rating-sort ?facts))
+   (bind ?facts (sort distance-sort ?facts))
    (progn$ (?f ?facts)
       (printout t "Recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf)))
 
 (defrule print-not-recommended
 =>
    (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 3)))
-   (bind ?facts (sort rating-sort ?facts))
+   (bind ?facts (sort distance-sort ?facts))
    (progn$ (?f ?facts)
       (printout t "Not recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf)))
