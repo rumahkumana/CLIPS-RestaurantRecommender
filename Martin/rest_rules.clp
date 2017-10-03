@@ -18,10 +18,9 @@
 	(bind ?latcoord (read))
 	(printout t "What are you long. coordinate ? ")
 	(bind ?longcoord (read))
-	(printout t "How many suggestions do you want ? ")
-	(bind ?suggNum (read))
 
-	(assert (numberOfSuggestion ?suggNum))
+
+	(assert (vr-to-print 3))
 	(assert (cust_preference (cust_name ?name) (isSmoker ?smoke) (minBudget ?minbudget) (maxBudget ?maxbudget) (dresscode ?clothes) (hasWifi ?wifi) (latitude ?latcoord) (longitude ?longcoord)))
 	(printout t crlf)
 )
@@ -35,22 +34,17 @@
 
 	(bind ?counter 0)
 	(if (eq ?restSmoke ?custSmoke) then
-		(printout t ?restName " Match isSmoke" crlf)
 		(bind ?counter (+ ?counter 1)))
 	(if (>= ?restMinBudget ?custMinBudget) then
-		(printout t ?restName " Match minBudget" crlf)
 		(bind ?counter (+ ?counter 1)))
 	(if (<= ?restMaxBudget ?custMaxBudget) then
-		(printout t ?restName " Match maxBudget" crlf)
 		(bind ?counter (+ ?counter 1)))
 	(if (eq ?restClothe ?custClothe) then
-		(printout t ?restName " Match dresscode" crlf)
 		(bind ?counter (+ ?counter 1)))
 	(if (eq ?restWifi ?custWifi) then
-		(printout t ?restName " Match hasWifi" crlf)
 		(bind ?counter (+ ?counter 1)))
 	(if (= ?counter 5) then
-		(bind ?recommendation 1)
+		(bind ?recommendation 1)d
 	else (if (<= ?counter 2) then
 			(bind ?recommendation 3)
 		else
@@ -58,7 +52,6 @@
 		)
 	)
 
-	(printout t ?restName " " ?counter " " ?recommendation crlf)
 	;; Euclidean distance
 	
 	(bind ?dist (sqrt (+ (** (abs (- ?restLat ?custLat)) 2) (** (abs (- ?restLong ?custLong)) 2))))
@@ -77,23 +70,42 @@
 
 
 (defrule print-very-recommended
-
+	?u <- (vr-to-print ?r)
 =>
-   (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 1)))
-   (bind ?facts (sort distance-sort ?facts))
-   (progn$ (?f ?facts)
-      (printout t "Very recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf)))
+	(bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 1)))
+	(bind ?facts (sort distance-sort ?facts))
+	(bind ?n ?r)
+	(bind ?i 1)
+	(progn$ (?f ?facts)
+   		(if (<= ?i ?n) then
+   			(printout t "Very recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf))
+   			(bind ?i (+ ?i 1)))
+   	(retract ?u)
+   	(assert (r-to-print (+ (- ?n ?i) 1))))
 
 (defrule print-recommended
+	?u <- (r-to-print ?r)
 =>
-   (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 2)))
-   (bind ?facts (sort distance-sort ?facts))
-   (progn$ (?f ?facts)
-      (printout t "Recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf)))
+	(bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 2)))
+	(bind ?facts (sort distance-sort ?facts))
+	(bind ?n ?r)
+	(bind ?i 1)
+	(progn$ (?f ?facts)
+   		(if (<= ?i ?n) then
+   			(printout t "Recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf))
+   			(bind ?i (+ ?i 1)))
+   	(retract ?u)
+   	(assert (nr-to-print (+ (- ?n ?i) 1))))
 
 (defrule print-not-recommended
+	?u <- (nr-to-print ?r)
 =>
-   (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 3)))
-   (bind ?facts (sort distance-sort ?facts))
-   (progn$ (?f ?facts)
-      (printout t "Not recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf)))
+	(bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 3)))
+	(bind ?facts (sort distance-sort ?facts))
+	(bind ?n ?r)
+	(bind ?i 1)
+	(progn$ (?f ?facts)
+   		(if (<= ?i ?n) then
+   			(printout t "Recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) "." crlf))
+   			(bind ?i (+ ?i 1)))
+   	(retract ?u))
