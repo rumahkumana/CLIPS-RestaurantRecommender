@@ -1,4 +1,4 @@
-;; Rules and functions
+;; Rules
 
 (deffunction isEmpty (?str)
 =>
@@ -26,39 +26,45 @@
 	(bind ?latcoord (readline))
 	(printout t "What are you long. coordinate ? ")
 	(bind ?longcoord (readline))
-	(printout t "How many suggestions do you want ? ")
-	(bind ?suggNum (readline))
 
 	(if (isEmpty ?name) then 
 		(bind ?name UNNAMED))
+	(bind ?maxbudget (sym-cat ?maxbudget))
 	(if (isEmpty ?smoke) then 
 		(bind ?smoke no))
+	(bind ?smoke (sym-cat ?smoke))
 	(if (isEmpty ?minbudget) then
-		(bind ?minbudget 9999)
-		(bind ?minbudget (float ?minbudget))
-		(assert (empty minBudget)))	
+		(bind ?minbudget 0)
+		(assert (empty minBudget))
+	else
+		(bind ?maxbudget (str-cat ?maxbudget)))
+	(bind ?minbudget (float ?minbudget))
 	(if (isEmpty ?maxbudget) then
 		(bind ?maxbudget 9999)
-		(bind ?maxbudget (float ?maxbudget))
-		(assert (empty maxBudget)))
+		(assert (empty maxBudget))
+	else
+		(bind ?maxbudget (str-cat ?maxbudget)))
+	(bind ?maxbudget (float ?maxbudget))
 	(if (isEmpty ?clothes) then 
 		(bind ?clothes casual))
+	(bind ?clothes (sym-cat ?clothes))
 	(if (isEmpty ?wifi) then 
 		(bind ?wifi yes))
+	(bind ?wifi (sym-cat ?wifi))
 	(if (isEmpty ?latcoord) then 
-		(bind ?latcoord -6))
+		(bind ?latcoord -6.8))
+	(bind ?latcoord (float ?latcoord))
 	(if (isEmpty ?longcoord) then 
-		(bind ?longcoord 107))
-	(if (isEmpty ?suggNum) then 
-		(bind ?suggNum 10))
+		(bind ?longcoord 107.6))
+	(bind ?longcoord (float ?longcoord))
 
-	(assert (numberOfSuggestion ?suggNum))
+	(assert (vr-to-print 3))
 	(assert (cust_preference (cust_name ?name) (isSmoker ?smoke) (minBudget ?minbudget) (maxBudget ?maxbudget) (dresscode ?clothes) (hasWifi ?wifi) (latitude ?latcoord) (longitude ?longcoord)))
 	(printout t crlf)
 )
 
 (defrule match-preference
-	?cp <- (cust_preference (cust_name ?custName) (isSmoker ?custSmoke) (minBudget ?custMinBudget) (maxBudget ?custMaxBudget) (dresscode ?custClothe) (hasWifi ?custWifi) (latitude ?custLat) (longitude ?custLong))
+	(cust_preference (cust_name ?custName) (isSmoker ?custSmoke) (minBudget ?custMinBudget) (maxBudget ?custMaxBudget) (dresscode ?custClothe) (hasWifi ?custWifi) (latitude ?custLat) (longitude ?custLong))
 	(restaurant (rest_name ?restName) (isSmoker ?restSmoke) (minBudget ?restMinBudget) (maxBudget ?restMaxBudget) (dresscode ?restClothe) (hasWifi ?restWifi) (latitude ?restLat) (longitude ?restLong))
 	(not (suggestion (rest_name ?restName)))
 =>
@@ -66,22 +72,20 @@
 
 	(bind ?counter 0)
 	(if (eq ?restSmoke ?custSmoke) then
-		(printout t ?restName " Match isSmoke" crlf)
 		(bind ?counter (+ ?counter 1)))
-	(if (>= ?restMinBudget ?custMinBudget) then
-		(printout t ?restName " Match minBudget" crlf)
+	(if (or (and (<= ?restMinBudget ?custMinBudget) (>= ?restMaxBudget ?custMaxBudget))
+			(and (<= ?restMinBudget ?custMinBudget) (<= ?restMaxBudget ?custMaxBudget))
+			(and (>= ?restMinBudget ?custMinBudget) (>= ?restMaxBudget ?custMaxBudget))
+			(and (>= ?restMinBudget ?custMinBudget) (<= ?restMaxBudget ?custMaxBudget))) then
 		(bind ?counter (+ ?counter 1)))
-	(if (<= ?restMaxBudget ?custMaxBudget) then
-		(printout t ?restName " Match maxBudget" crlf)
-		(bind ?counter (+ ?counter 1)))
+;	(if (<= ?restMaxBudget ?custMaxBudget) then
+;		(bind ?counter (+ ?counter 1)))
 	(if (eq ?restClothe ?custClothe) then
-		(printout t ?restName " Match dresscode" crlf)
 		(bind ?counter (+ ?counter 1)))
 	(if (eq ?restWifi ?custWifi) then
-		(printout t ?restName " Match hasWifi" crlf)
 		(bind ?counter (+ ?counter 1)))
-	(if (= ?counter 5) then
-		(bind ?recommendation 1)
+	(if (= ?counter 4) then
+		(bind ?recommendation 1)d
 	else (if (<= ?counter 2) then
 			(bind ?recommendation 3)
 		else
@@ -89,7 +93,6 @@
 		)
 	)
 
-	(printout t ?restName " " ?counter " " ?recommendation crlf)
 	;; Euclidean distance
 	
 	(bind ?dist (sqrt (+ (** (abs (- ?restLat ?custLat)) 2) (** (abs (- ?restLong ?custLong)) 2))))
@@ -110,25 +113,45 @@
    (> (fact-slot-value ?f1 minBudget) (fact-slot-value ?f2 minBudget)))
 
 (defrule print-very-recommended
+	?u <- (vr-to-print ?r)
 =>
-   (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 1)))
+	(bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 1)))
    (bind ?facts (sort cost-sort ?facts))
    (bind ?facts (sort distance-sort ?facts))
-   (progn$ (?f ?facts)
-      (printout t "Very recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) " and cost " (fact-slot-value ?f minBudget) crlf)))
+	(bind ?n ?r)
+	(bind ?i 1)
+	(progn$ (?f ?facts)
+   		(if (<= ?i ?n) then
+   			(printout t "Very recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) " and cost " (fact-slot-value ?f minBudget) crlf))
+   			(bind ?i (+ ?i 1)))
+   	(retract ?u)
+   	(assert (r-to-print (+ (- ?n ?i) 1))))
 
 (defrule print-recommended
+	?u <- (r-to-print ?r)
 =>
-   (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 2)))
+	(bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 2)))
    (bind ?facts (sort cost-sort ?facts))
    (bind ?facts (sort distance-sort ?facts))
-   (progn$ (?f ?facts)
-      (printout t "Recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) " and cost " (fact-slot-value ?f minBudget) crlf)))
+	(bind ?n ?r)
+	(bind ?i 1)
+	(progn$ (?f ?facts)
+   		(if (<= ?i ?n) then
+   			(printout t "Recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) " and cost " (fact-slot-value ?f minBudget) crlf))
+   			(bind ?i (+ ?i 1)))
+   	(retract ?u)
+   	(assert (nr-to-print (+ (- ?n ?i) 1))))
 
 (defrule print-not-recommended
+	?u <- (nr-to-print ?r)
 =>
-   (bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 3)))
-   (bind ?facts (sort cost-sort ?facts))  
+	(bind ?facts (find-all-facts ((?f suggestion)) (= (fact-slot-value ?f recommendation-type) 3)))
+   (bind ?facts (sort cost-sort ?facts))
    (bind ?facts (sort distance-sort ?facts))
-   (progn$ (?f ?facts)
-      (printout t "Not recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) " and cost " (fact-slot-value ?f minBudget) crlf)))
+	(bind ?n ?r)
+	(bind ?i 1)
+	(progn$ (?f ?facts)
+   		(if (<= ?i ?n) then
+   			(printout t "Not recommended : Restaurant " (fact-slot-value ?f rest_name) " with distance " (fact-slot-value ?f distance) " and cost " (fact-slot-value ?f minBudget) crlf))
+   			(bind ?i (+ ?i 1)))
+   	(retract ?u))
